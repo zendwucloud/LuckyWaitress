@@ -6,27 +6,96 @@
     <title>Dragon's Treasure (Modular Final)</title>
     <style>
         /* --- 1. 基礎設定 --- */
-        html, body { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background-color: #000; touch-action: none; position: fixed; }
+        /* 🌟 使用 100dvh 確保在 Safari 下能精準扣除導覽列高度 */
+        html, body { margin: 0; padding: 0; width: 100%; height: 100vh; height: 100dvh; overflow: hidden; background-color: #000; touch-action: none; position: fixed; }
         body { background-image: url('background.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat; display: flex; justify-content: center; align-items: center; font-family: 'Arial', sans-serif; user-select: none; -webkit-user-select: none; }
         
-        .stage { position: relative; width: calc(100vh * 9 / 16); height: 100vh; max-width: 100vw; aspect-ratio: 720/1280; background-color: transparent; opacity: 0; transition: opacity 0.5s ease-in; }
+        .stage { 
+            position: relative; 
+            height: 100vh; height: 100dvh; 
+            aspect-ratio: 9/16; /* 🌟 核心修正：改用比例鎖定，取代舊的寬度計算 */
+            max-width: 100vw; 
+            max-height: calc(100vw * 16 / 9); 
+            background-color: transparent; 
+            opacity: 0; 
+            transition: opacity 0.5s ease-in; 
+        }
         .stage.loaded { opacity: 1; }
 
         /* --- 2. 載入過場 --- */
         #loading-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: transparent; z-index: 9999; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s ease-out; }
         #loading-layer.hidden { opacity: 0; pointer-events: none; }
-        .loading-container { position: relative; width: calc(100vh * 9 / 16); height: 100vh; max-width: 100vw; aspect-ratio: 720/1280; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; }
+        .loading-container { 
+            position: relative; 
+            height: 100vh; height: 100dvh; 
+            aspect-ratio: 9/16;
+            max-width: 100vw; 
+            max-height: calc(100vw * 16 / 9); 
+            display: flex; flex-direction: column; justify-content: flex-end; align-items: center; 
+        }
         .loading-visual { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
         .loading-bottom-ui { position: relative; z-index: 10; width: 70%; margin-bottom: 12%; display: flex; flex-direction: column; align-items: center; text-align: center; }
         #btn-start-game { margin-top: 3vh; padding: 1.5vh 6vh; font-family: 'Arial Black', sans-serif; font-size: 2.8vh; color: #fff; background: linear-gradient(180deg, #ff4500, #8b0000); border: 2px solid #ffd700; border-radius: 50px; box-shadow: 0 0 20px rgba(255, 69, 0, 0.8), inset 0 0 10px rgba(255, 255, 0, 0.3); cursor: pointer; display: block; animation: pulseBtn 1.5s infinite; }
         @keyframes pulseBtn { 0% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.05); filter: brightness(1.2); } 100% { transform: scale(1); filter: brightness(1); } }
 
+        /* --- 載入畫面特色介紹 (八方陰影純淨白字版) --- */
+        #loading-promo-text {
+            position: relative;
+            z-index: 10;
+            width: 85%;
+            margin-bottom: 3vh; 
+            text-align: center; 
+            opacity: 0; 
+            animation: fadeInPromo 1.5s ease-in forwards; 
+        }
+        .promo-title {
+            color: #ffffff;
+            font-size: 2.3vh; 
+            font-family: 'Arial Black', sans-serif;
+            margin-bottom: 1.5vh;
+            /* 八方陰影包圍，保證白字不被吃掉 */
+            text-shadow: 
+                2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 
+                0 2px 0 #000, 2px 0 0 #000, 0 -2px 0 #000, -2px 0 0 #000,
+                3px 3px 5px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.8);
+            letter-spacing: 1px;
+        }
+
+        .promo-item {
+            color: #ffffff;
+            font-size: 1.7vh; 
+            font-weight: 900; 
+            margin-bottom: 1.2vh;
+            line-height: 1.5;
+            text-align: left;
+            display: inline-block; 
+            /* 內文 1.5px 八方陰影 */
+            text-shadow: 
+                1.5px 1.5px 0 #000, -1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000, -1.5px 1.5px 0 #000, 
+                0 1.5px 0 #000, 1.5px 0 0 #000, 0 -1.5px 0 #000, -1.5px 0 0 #000,
+                2px 2px 4px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.8);
+        }
+        @keyframes fadeInPromo { 
+            0% { opacity: 0; transform: translateY(10px); } 
+            100% { opacity: 1; transform: translateY(0); } 
+        }   
         /* --- 3. 遊戲內部與特效 --- */
-        #bg-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; filter: brightness(0.75); transition: filter 1.0s ease-in-out; }
+        #bg-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; filter: brightness(1.0); transition: filter 1.0s ease-in-out; }
         .free-mode #bg-video { filter: brightness(1.0); }
         .fire-effect { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; opacity: 0; transition: opacity 1s ease-in-out; box-shadow: inset 0 0 50px 20px rgba(0, 0, 0, 0); mix-blend-mode: overlay; }
         .free-mode .fire-effect { opacity: 1; animation: firePulse 2s infinite alternate ease-in-out; }
-        @keyframes firePulse { 0% { box-shadow: inset 0 0 80px 20px rgba(255, 69, 0, 0.4); background-color: rgba(255, 0, 0, 0.1); } 100% { box-shadow: inset 0 0 150px 60px rgba(255, 30, 0, 0.7); background-color: rgba(255, 60, 0, 0.2); } }
+        @keyframes firePulse { 
+    0% { 
+        /* 柔和的亮粉色邊緣光暈與極淡的粉色底 */
+        box-shadow: inset 0 0 80px 20px rgba(255, 113, 184, 0.4); 
+        background-color: rgba(255, 20, 147, 0.1); 
+    } 
+    100% { 
+        /* 強烈的深粉色霓虹邊緣光暈與較深的粉色底 */
+        box-shadow: inset 0 0 150px 60px rgba(255, 147, 205, 0.7); 
+        background-color: rgba(255, 20, 147, 0.2); 
+    } 
+}
 
         .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('UI.png'); background-size: 100% 100%; background-position: center; background-repeat: no-repeat; z-index: 1; pointer-events: none; }
         #fg-mask { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 2500; opacity: 0; pointer-events: none; transition: opacity 0.5s ease-in-out; }
@@ -70,6 +139,12 @@
         .sym-mul { z-index: 180; width: 125%; margin-left: -12.5%; filter: drop-shadow(0 0 8px rgba(255, 100, 0, 0.9)); background-size: 100% 100%; background-position: center bottom; background-repeat: no-repeat; }
         .sym-20 { background-image: url('x2.png'); } .sym-21 { background-image: url('x10.png'); } .sym-22 { background-image: url('x25.png'); } .sym-23 { background-image: url('x100.png'); }
         .sym-mul.active { background-image: url('eye_sprite.png') !important; background-size: 2800% 100% !important; z-index: 999 !important; animation: scatterRunFinal 1.5s steps(27) infinite, wildPop 0.8s ease-in-out infinite alternate !important; }
+        /* 👇 補上這裡：s1 ~ s5 的中獎動態精靈圖 (Sprite) */
+        .sym-1.active { background-image: url('s1_sprite.png') !important; background-size: 2800% 100% !important; z-index: 900 !important; animation: scatterRunFinal 1.5s steps(27) infinite, winAction 1s ease-in-out infinite !important; }
+        .sym-2.active { background-image: url('s2_sprite.png') !important; background-size: 2800% 100% !important; z-index: 900 !important; animation: scatterRunFinal 1.5s steps(27) infinite, winAction 1s ease-in-out infinite !important; }
+        .sym-3.active { background-image: url('s3_sprite.png') !important; background-size: 2800% 100% !important; z-index: 900 !important; animation: scatterRunFinal 1.5s steps(27) infinite, winAction 1s ease-in-out infinite !important; }
+        .sym-4.active { background-image: url('s4_sprite.png') !important; background-size: 2800% 100% !important; z-index: 900 !important; animation: scatterRunFinal 1.5s steps(27) infinite, winAction 1s ease-in-out infinite !important; }
+        .sym-5.active { background-image: url('s5_sprite.png') !important; background-size: 2800% 100% !important; z-index: 900 !important; animation: scatterRunFinal 1.5s steps(27) infinite, winAction 1s ease-in-out infinite !important; }
 
         @keyframes winAction { 0% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.15); filter: brightness(1.3) drop-shadow(0 0 10px gold); } 100% { transform: scale(1); filter: brightness(1); } }
         .anim-win { animation: winAction 1s ease-in-out infinite; z-index: 300 !important; transition: none !important; } 
@@ -103,13 +178,7 @@
         
 /* 1. 跑馬燈與文字樣式 */
 .style-win { font-family: 'Arial Black', sans-serif; font-size: 3.5vh; color: #FFFF00; text-shadow: 2px 2px 0px #FF4500, 0 0 10px #FF8C00; letter-spacing: 1px; }
-.style-promo { 
-    font-family: 'Arial', sans-serif !important; 
-    font-weight: bold !important; 
-    font-size: 2.8vh !important; 
-    color: #ffa0ea !important; /* 改成淡綠色 */
-    text-shadow: 2px 2px 0px #000 !important; 
-}
+.style-promo { font-family: 'Arial', sans-serif !important; font-weight: bold !important; font-size: 2.8vh !important; color: #38d7ff !important; text-shadow: 2px 2px 0px #000 !important; }
 .style-blue { font-family: 'Arial Black', sans-serif !important; font-size: 3.2vh !important; color: #00FFFF !important; text-shadow: 0 0 10px #0000FF, 2px 2px 0px #000080 !important; letter-spacing: 1px; }
 /* 👇 補上這行專屬的紅色警告樣式 */
 .style-error { font-family: 'Arial Black', sans-serif !important; font-size: 3.2vh !important; color: #ff4500 !important; text-shadow: 0 0 10px #ff0000, 2px 2px 0px #000 !important; letter-spacing: 2px; }
@@ -218,6 +287,9 @@
     <div id="loading-layer">
         <div class="loading-container">
             <img src="loading.jpg" class="loading-visual" onerror="this.style.display='none'">
+            
+            <div id="loading-promo-text"></div>
+
             <div class="loading-bottom-ui"><div id="btn-start-game" style="display:block;">★ 點擊開始遊戲 ★</div></div>
         </div>
     </div>
@@ -395,15 +467,6 @@
             getSymbolEl: function(c, r) { return document.getElementById(`col-${c}`).querySelector(`div[data-row="${r}"]`); }
         };
 
-        window.addEventListener('message', (event) => {
-            const data = event.data;
-            if (data.type === 'initBalance') {
-                engine.state.credit = data.value;
-                document.getElementById('ui-credit').innerText = engine.state.credit.toLocaleString('en-US', {minimumFractionDigits: 2});
-            } 
-            else if (data.type === 'updateSettings') { window.AudioMgr.updateSettings(data.music, data.sfx); }
-        });
-
         function syncBalanceToLobby() {
             if (window.parent) window.parent.postMessage({ type: 'updateBalance', value: engine.state.credit }, '*');
         }
@@ -508,6 +571,10 @@
                 gui.updateMessage("WIN " + winAmount.toLocaleString('en-US', {minimumFractionDigits: 2}), "style-win", "anim-pop");
                 const winEl = document.getElementById('ui-win');
                 winEl.innerText = totalWin.toLocaleString('en-US', {minimumFractionDigits: 2});
+
+                if (window.parent && winAmount > 0) {
+                    window.parent.postMessage({ type: 'win', amount: winAmount }, '*');
+                }
 
                 if (engine.state.isFreeGame) {
                     let currentMul = spinMultipliers > 0 ? spinMultipliers : 1;
@@ -671,17 +738,87 @@
                 if(gui.isAutoPlay || engine.state.isFreeGame) { setTimeout(() => engine.startSpin(), 800); }
             }
         });
-
+        // 🌟 遊戲端的接收雷達：攔截大廳傳來的資料
+        window.addEventListener('message', (event) => {
+            const data = event.data;
+            if (data.type === 'initBalance') {
+                engine.state.credit = data.value;
+                document.getElementById('ui-credit').innerText = engine.state.credit.toLocaleString('en-US', {minimumFractionDigits: 2});
+            } 
+            else if (data.type === 'updateSettings') { 
+                window.AudioMgr.updateSettings(data.music, data.sfx); 
+            }
+            // 🌟 接收大廳傳來的說明文案 (火龍祕寶穩定版)
+            else if (data.type === 'initPromoText') {
+                const promoContainer = document.getElementById('loading-promo-text');
+                if (promoContainer) {
+                    // 如果沒傳文案，至少清空它，不要顯示 undefined
+                    const safeText = data.text || ""; 
+                    let lines = safeText.split(/\r?\n/);
+                    let html = '';
+                    
+                    if (lines.length > 0 && lines[0].trim() !== '') {
+                        html += `<div class="promo-title">${lines[0]}</div>`;
+                    }
+                    for (let i = 1; i < lines.length; i++) {
+                        let line = lines[i].trim();
+                        if (line !== '') {
+                            let parts = line.split(/\||｜/); 
+                            if (parts.length > 1) {
+                                html += `<div class="promo-item"><span style="color:#00ffff;">${parts[0]}</span>｜${parts[1]}</div>`;
+                            } else {
+                                html += `<div class="promo-item">${line}</div>`;
+                            }
+                        }
+                    }
+                    promoContainer.innerHTML = html;
+                    
+                    // 強制觸發淡入動畫
+                    promoContainer.style.opacity = '0'; 
+                    promoContainer.style.animation = 'none';
+                    void promoContainer.offsetWidth; 
+                    promoContainer.style.animation = 'fadeInPromo 1.5s ease-in forwards';
+                }
+            }
+        });
         window.addEventListener('DOMContentLoaded', () => {
-            // 1. 預載素材
-            const preloadSprites = ['dragon_sprite.png', 'SCATTER_sprite.png', 'eye_sprite.png', 'explosion_sprite.png'];
+            // 1. 預載素材 (確保動畫流暢)
+            const preloadSprites = [
+                'dragon_sprite.png', 'SCATTER_sprite.png', 'eye_sprite.png', 'explosion_sprite.png',
+                's1_sprite.png', 's2_sprite.png', 's3_sprite.png', 's4_sprite.png', 's5_sprite.png'
+            ];
             preloadSprites.forEach(src => { let img = new Image(); img.src = src; });
             
             // 2. 初始化畫面
             View.init();
 
-            // 3. 將引擎交給 GUIController，它會自動幫我們接管所有按鈕和 UI！
+            // 3. 初始化 GUI 控制器 (全域唯一，不要重複！)
             gui = new GUIController(engine);
+
+            // 🌟 核心修正：主動向大廳請求同步資料 (延遲 100ms 確保雷達已開)
+            setTimeout(() => {
+                if (window.parent) {
+                    console.log("【遊戲端】主動請求大廳同步資料...");
+                    window.parent.postMessage({ type: 'requestInitData' }, '*');
+                }
+            }, 100);
+
+            // 🌟 4. 終極音效互斥鎖 (安全攔截版)
+            if (window.AudioMgr && window.AudioMgr.playBGM) {
+                const originalPlayBGM = window.AudioMgr.playBGM;
+                window.AudioMgr.playBGM = function(trackName) {
+                    const bgmMain = document.getElementById('bgm_main');
+                    const bgmFree = document.getElementById('bgm_free');
+                    if (trackName === 'main' && bgmFree) {
+                        bgmFree.pause();
+                        bgmFree.currentTime = 0;
+                    } else if (trackName === 'free' && bgmMain) {
+                        bgmMain.pause();
+                        bgmMain.currentTime = 0;
+                    }
+                    originalPlayBGM.call(window.AudioMgr, trackName);
+                };
+            }
         });
     </script>
 </body>

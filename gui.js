@@ -5,6 +5,7 @@ export class GUIController {
         this.isAutoPlay = false;
         this.isTurboMode = false;
         this.promoInterval = null;
+        this.sfxUnlocked = false;
 
         this.initAudio();
         this.initCoinManager();
@@ -21,7 +22,6 @@ export class GUIController {
                     try { document.getElementById('bgm_main').pause(); document.getElementById('bgm_free').pause(); } catch(e){} 
                 } 
                 else { 
-                    // 🌟 防護罩：確保玩家已經點擊過開始按鈕 (畫面已載入) 才接受大廳的播放指令
                     const stage = document.getElementById('game-stage');
                     if (stage && stage.classList.contains('loaded')) {
                         this.playBGM(document.body.classList.contains('free-mode') ? 'free' : 'main'); 
@@ -31,14 +31,17 @@ export class GUIController {
             playBGM: function(type) {
                 if (!this.musicEnabled) return;
                 try { document.getElementById('bgm_main').pause(); document.getElementById('bgm_free').pause(); } catch(e){}
-                let target = document.getElementById((type === 'free') ? 'bgm_free' : 'bgm_main');
+                
+                let targetId = (type === 'free') ? 'bgm_free' : 'bgm_main';
+                let target = document.getElementById(targetId);
                 if(target) { 
+                    target.muted = false; // ★ 核心關鍵：真正需要播的這一刻才解開靜音
                     target.volume = (type === 'free') ? 1.0 : 0.8; 
                     target.play().catch(()=>{}); 
                 }
             },
             playSFX: function(name) {
-                if (!this.sfxEnabled) return;
+                if (!this.sfxEnabled) return; 
                 let audio = document.getElementById(`sfx_${name}_1`);
                 if (audio) { 
                     try { audio.currentTime = 0; } catch(e){} 
@@ -158,25 +161,22 @@ export class GUIController {
                 document.getElementById('game-stage').classList.add('loaded');
                 
                 try {
-                    // 1. 正式啟動主遊戲音樂 (MG)
-                    window.AudioMgr.playBGM('main');
+                    const bgmMain = document.getElementById('bgm_main');
+                    const bgmFree = document.getElementById('bgm_free');
                     
-                    // 2. 🤫 偷渡解鎖免費遊戲音樂 (FG) - 音量0播放後立刻暫停，騙過蘋果憑證
-                    let freeBgm = document.getElementById('bgm_free');
-                    if (freeBgm) {
-                        freeBgm.volume = 0;
-                        let p = freeBgm.play();
-                        if (p !== undefined) {
-                            p.then(() => {
-                                freeBgm.pause();
-                                freeBgm.currentTime = 0;
-                                freeBgm.volume = 1.0; // 恢復正常音量備用
-                            }).catch(() => {
-                                freeBgm.volume = 1.0; 
-                            });
-                        }
+                    if (bgmMain) {
+                        bgmMain.muted = false; 
+                        bgmMain.volume = 0.8;
+                        bgmMain.play().catch(()=>{});
                     }
-                } catch(e) { console.warn("Audio start bypassed", e); }
+                    if (bgmFree) {
+                        bgmFree.muted = true;  // ★ FG音樂強迫靜音偷播
+                        bgmFree.play().then(() => {
+                            bgmFree.pause();
+                            bgmFree.currentTime = 0;
+                        }).catch(()=>{});
+                    }
+                } catch(e) { console.warn("BGM start bypassed", e); }
 
                 if (window.CoinManager) window.CoinManager.init();
                 this.startPromoLoop();
@@ -187,6 +187,27 @@ export class GUIController {
         const spinBtn = document.getElementById('spinBtn');
         if(spinBtn) {
             spinBtn.addEventListener('click', () => { 
+                
+                // ★ 玩家第一次按下 Spin 時，瞬間解鎖所有音效
+                if (!this.sfxUnlocked) {
+                    try {
+                        const sfxAudios = document.querySelectorAll('audio[id^="sfx_"]');
+                        sfxAudios.forEach(a => {
+                            if (a.id === 'sfx_spin_1') return; // ★ 給 Spin 音效豁免權
+                            a.muted = true;
+                            let p = a.play();
+                            if (p !== undefined) {
+                                p.then(() => {
+                                    a.pause();
+                                    a.currentTime = 0;
+                                    a.muted = false;
+                                }).catch(()=>{});
+                            }
+                        });
+                        this.sfxUnlocked = true;
+                    } catch(e) {}
+                }
+
                 this.isAutoPlay = false; 
                 document.getElementById('btn-auto').classList.remove('active'); 
                 this.engine.startSpin(false); 
